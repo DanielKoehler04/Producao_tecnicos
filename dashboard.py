@@ -24,103 +24,108 @@ periodos_ranking = df_melt_ranking["PERIODO"].unique()[::-1]
 periodos_unicos_ranking = [p for p in ordem_periodos if p in df_melt_ranking["PERIODO"].unique()]
 periodos_unicos_ranking.reverse()
 
-st.markdown(
-                f"<h2 style='font-size:30px;text-align:center;' >Ranking por Período</h2>",
-                unsafe_allow_html=True
-        )
+ranking_ck = st.checkbox("Visualizar Ranking")
 
-periodo_escolhido_ranking = st.selectbox("Selecione um período", periodos_unicos_ranking)
+if ranking_ck:
 
-df_melt_ranking = df_melt_ranking[df_melt_ranking["PERIODO"] == periodo_escolhido_ranking]
+    st.markdown(
+                    f"<h2 style='font-size:30px;text-align:center;' >Ranking por Período</h2>",
+                    unsafe_allow_html=True
+            )
 
-df_atg_ranking = df_melt_ranking[df_melt_ranking["TIPO"] == "ATG"].copy()
+    periodo_escolhido_ranking = st.selectbox("Selecione um período", periodos_unicos_ranking)
 
-df_atg_ranking["VALOR"] = (
-    df_atg_ranking["VALOR"]
-    .astype(str)
-    .str.replace("%", "", regex=False)
-    .str.replace(",", ".", regex=False)
-    .str.strip()
-)
+    df_melt_ranking = df_melt_ranking[df_melt_ranking["PERIODO"] == periodo_escolhido_ranking]
 
-df_atg_ranking["VALOR"] = pd.to_numeric(df_atg_ranking["VALOR"], errors="coerce")
-df_atg_ranking = df_atg_ranking.dropna(subset=["VALOR"])
-df_atg_ranking = df_atg_ranking[df_atg_ranking["VALOR"] != 0]
+    df_atg_ranking = df_melt_ranking[df_melt_ranking["TIPO"] == "ATG"].copy()
+
+    df_atg_ranking["VALOR"] = (
+        df_atg_ranking["VALOR"]
+        .astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", ".", regex=False)
+        .str.strip()
+    )
+
+    df_atg_ranking["VALOR"] = pd.to_numeric(df_atg_ranking["VALOR"], errors="coerce")
+    df_atg_ranking = df_atg_ranking.dropna(subset=["VALOR"])
+    df_atg_ranking = df_atg_ranking[df_atg_ranking["VALOR"] != 0]
 
 
-# Calcula média de atingimento por técnico
-ranking = df_atg_ranking.groupby("TÉCNICO", as_index=False)["VALOR"].mean().dropna()
-
-
-
-# Top 10 e bottom 10
-melhores = ranking.sort_values("VALOR", ascending=False).head(10)
-piores = ranking.sort_values("VALOR", ascending=True).head(10)
+    # Calcula média de atingimento por técnico
+    ranking = df_atg_ranking.groupby("TÉCNICO", as_index=False)["VALOR"].mean().dropna()
 
 
 
-st.markdown("""
-<style>
-.rank-container {
-    display: flex;
-    justify-content: space-around;
-    gap: 40px;
-    margin-bottom: 40px;
-}
-.rank-card {
-    width: 45%;
-    background-color: #0e1117;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(255,255,255,0.1);
-}
-.rank-card h3 {
-    text-align: center;
-    color: #4fd1c5;
-    margin-bottom: 15px;
-}
-.rank-list {
-    list-style: none;
-    padding-left: 0;
-    color: white;
-    font-size: 16px;
-}
-.rank-list li {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 6px 0;
-}
-.rank-list li span:first-child {
-    font-weight: 600;
-}
-</style>
-""", unsafe_allow_html=True)
+    # Top 10 e bottom 10
+    melhores = ranking.sort_values("VALOR", ascending=False).head(10)
+    piores = ranking.sort_values("VALOR", ascending=True).head(10)
 
-# HTML dos rankings
-melhores_html = "".join([
-    f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
-    for _, row in melhores.iterrows()
-])
-piores_html = "".join([
-    f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
-    for _, row in piores.iterrows()
-])
 
-html = textwrap.dedent(f"""
-<div class="rank-container">
-    <div class="rank-card">
-        <h3>🏆 Top 10 Técnicos</h3>
-        <ul class="rank-list">{melhores_html}</ul>
+
+
+    st.markdown("""
+    <style>
+    .rank-container {
+        display: flex;
+        justify-content: space-around;
+        gap: 40px;
+        margin-bottom: 40px;
+    }
+    .rank-card {
+        width: 45%;
+        background-color: #0e1117;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+    }
+    .rank-card h3 {
+        text-align: center;
+        color: #4fd1c5;
+        margin-bottom: 15px;
+    }
+    .rank-list {
+        list-style: none;
+        padding-left: 0;
+        color: white;
+        font-size: 16px;
+    }
+    .rank-list li {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 6px 0;
+    }
+    .rank-list li span:first-child {
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # HTML dos rankings
+    melhores_html = "".join([
+        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
+        for _, row in melhores.iterrows()
+    ])
+    piores_html = "".join([
+        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
+        for _, row in piores.iterrows()
+    ])
+
+    html = textwrap.dedent(f"""
+    <div class="rank-container">
+        <div class="rank-card">
+            <h3>🏆 Top 10 Técnicos</h3>
+            <ul class="rank-list">{melhores_html}</ul>
+        </div>
+        <div class="rank-card">
+            <h3>⚠️ 10 Piores Técnicos</h3>
+            <ul class="rank-list">{piores_html}</ul>
+        </div>
     </div>
-    <div class="rank-card">
-        <h3>⚠️ 10 Piores Técnicos</h3>
-        <ul class="rank-list">{piores_html}</ul>
-    </div>
-</div>
-""")
+    """)
 
-st.markdown(html, unsafe_allow_html=True)
+    st.markdown(html, unsafe_allow_html=True)
 
 
 tecnicos = df["TÉCNICO"]
