@@ -1,0 +1,48 @@
+# --- Virtual environments ---
+venv/
+.env/
+.env.*
+
+# --- Python bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Jupyter Notebook checkpoints ---
+.ipynb_checkpoints/
+
+# --- Logs and databases ---
+*.log
+*.sqlite3
+*.db
+*.bak
+
+# --- OS generated files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE / editor files ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Distribution / build files ---
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# --- Streamlit ---
+.streamlit/
+
+# --- Temporary files ---
+*.tmp
+*.swp
+*.lock
+
+# --- Coverage reports ---
+.coverage
+htmlcov/
+coverage.xml
