@@ -138,6 +138,7 @@ if ranking_ck:
         justify-content: space-around;
         gap: 40px;
         margin-bottom: 40px;
+        flex-wrap: wrap;
     }
     .rank-card {
         width: 45%;
