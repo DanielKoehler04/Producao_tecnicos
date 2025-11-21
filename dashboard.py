@@ -9,6 +9,7 @@ st.title("Produção individual")
 url = "https://docs.google.com/spreadsheets/d/1bYAQiCoNwgCgJBP8XpZuoafGN6uaEI5AfYIC-g68hYA/gviz/tq?tqx=out:csv"
 df = pd.read_csv(url, on_bad_lines='skip')
 
+
 colunas_periodos_ranking = [col for col in df.columns if col.count("_") == 2]
 
 ordem_periodos = [
@@ -17,14 +18,16 @@ ordem_periodos = [
 ]
 
 periodo_3meses = [
-    "JUL_AGO", "AGO_SET", "SET_OUT"
+    "AGO_SET", "SET_OUT", "OUT_NOV"
 ]
 
 df_3meses = df_3meses = df[df["NOME 3 MESES"].notna() & (df["NOME 3 MESES"] != "")]
 
 
 df_melt_3meses = df_3meses.melt(id_vars=["TÉCNICO", "SUPERVISOR"], value_vars=colunas_periodos_ranking, var_name="PERIODO_TIPO", value_name="VALOR")
+
 df_melt_3meses[["PERIODO", "TIPO"]] = df_melt_3meses["PERIODO_TIPO"].str.rsplit("_", n=1, expand=True)
+
 df_melt_3meses.drop(columns="PERIODO_TIPO", inplace=True)
 
 nome_3meses = df_melt_3meses["TÉCNICO"].unique()
