@@ -3,6 +3,13 @@ import streamlit as st
 import plotly.express as px
 import textwrap
 
+
+def corrige_nan(value):
+    if value == 'nan':
+        value = "Não encontrado"
+    return value
+
+
 st.set_page_config(page_title="Produção Individual", layout="wide")
 st.title("Produção individual")
 
@@ -18,7 +25,8 @@ ordem_periodos = [
 ]
 
 periodo_3meses = [
-    "AGO_SET", "SET_OUT", "OUT_NOV"
+    "JAN_FEV", "FEV_MAR", "MAR_ABR", "ABR_MAI", "MAI_JUN", "JUN_JUL",
+    "JUL_AGO", "AGO_SET", "SET_OUT", "OUT_NOV",
 ]
 
 df_3meses = df_3meses = df[df["NOME 3 MESES"].notna() & (df["NOME 3 MESES"] != "")]
@@ -35,7 +43,8 @@ nome_3meses = df_melt_3meses["TÉCNICO"].unique()
 st.markdown("""
     <style>
     div[data-testid="stMarkdownContainer"] p {
-        font-size: 20px;  
+        font-size: 20px;
+          
     }
     </style>
 """, unsafe_allow_html=True)
@@ -46,8 +55,8 @@ ck_3meses = st.checkbox("Visualizar Técnicos que não bateram meta")
 if ck_3meses:
 
     st.markdown(
-                        f"<h2 style='font-size:30px;text-align:center; margin-top:30px; color: #a0aec0;' >Técnicos que não bateram meta nos últimos 3 períodos</h2>",
-                        unsafe_allow_html=True
+                    f"<h2 style='font-size:30px;text-align:center; margin-top:30px; color: #a0aec0;' >Técnicos que não bateram meta nos últimos 3 períodos</h2>",
+                    unsafe_allow_html=True
                 )
 
 
@@ -55,150 +64,56 @@ if ck_3meses:
 
     df_filtrado = df_melt_3meses[df_melt_3meses["TÉCNICO"] == nome_escolhido_3meses]
 
-    cols = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
-    for i, periodo in enumerate(periodo_3meses):
-        with cols[i]:
-            # Filtra os dados do período atual
-            df_periodo = df_filtrado[df_filtrado["PERIODO"] == periodo]
-            
+    with col1:
+        meta_3 = st.checkbox("Mostrar Meta", key="met")
 
-            # Obtém os valores de cada tipo
-            meta = df_periodo.loc[df_periodo["TIPO"] == "MT", "VALOR"].iloc[0]
-            faturado = df_periodo.loc[df_periodo["TIPO"] == "FAT", "VALOR"].iloc[0]
-            atingimento = df_periodo.loc[df_periodo["TIPO"] == "ATG", "VALOR"].iloc[0]
-            supervisor = df_periodo["SUPERVISOR"].iloc[0]
-            
+    with col2:
+        fat_3 = st.checkbox("Mostrar Faturamento", key="ft")
 
-            # Exibe o card
-            st.markdown(f"""
-            <div style='background-color: rgba(255, 255, 255, 0.05); padding:20px; border-radius:15px; text-align:center; box-shadow: 0 4px 12px rgba(100,100,100,0.2); border: solid 1px rgba(255,255,255,0.2); margin: 40px 20px; '>
-                <label style='font-size:22px; color:#a0aec0; margin-bottom:25px;'>{periodo}</label>
-                <p style='font-size: 20px; color:#38a169;'><b>Meta:</b> {meta}</p>
-                <p style='font-size: 20px; color: #e53e3e;'><b>Faturado:</b> {faturado}</p>
-                <p style='font-size: 20px; color:#3182ce;'><b>Atingimento:</b> {atingimento}</p>
-                 <p style='font-size:18px; color:#a0aec0;'><b>Supervisor: {supervisor}</b></p>
-            </div>
-            """, unsafe_allow_html=True)
+    with col3:
+        atg_3 = st.checkbox("Mostrar Atingimento", key="at")
 
-
-
-
-df_melt_ranking = df.melt(id_vars=["TÉCNICO"], value_vars=colunas_periodos_ranking, var_name="PERIODO_TIPO", value_name="VALOR")
-df_melt_ranking[["PERIODO", "TIPO"]] = df_melt_ranking["PERIODO_TIPO"].str.rsplit("_", n=1, expand=True)
-df_melt_ranking.drop(columns="PERIODO_TIPO", inplace=True)
-
-periodos_ranking = df_melt_ranking["PERIODO"].unique()[::-1]
-periodos_unicos_ranking = [p for p in ordem_periodos if p in df_melt_ranking["PERIODO"].unique()]
-periodos_unicos_ranking.reverse()
-
-ranking_ck = st.checkbox("Visualizar Ranking")
-
-if ranking_ck:
-
-    st.markdown(
-                    f"<h2 style='font-size:30px;text-align:center; margin-top:30px; color: #a0aec0;' >Ranking por Período</h2>",
-                    unsafe_allow_html=True
-            )
-
-    periodo_escolhido_ranking = st.selectbox("Selecione um período", periodos_unicos_ranking)
+    with col4:
+        score_3 = st.checkbox("Mostrar Pontuação", key="scor")
 
     
+    cards_html = "<div style='display:flex; text-align: center; overflow:scroll;'>"
 
-    df_melt_ranking = df_melt_ranking[df_melt_ranking["PERIODO"] == periodo_escolhido_ranking]
+    for periodo in periodo_3meses:
+            
+        dados_periodo = df_filtrado[df_filtrado["PERIODO"] == periodo].set_index("TIPO")["VALOR"].fillna("---")
 
-    df_atg_ranking = df_melt_ranking[df_melt_ranking["TIPO"] == "ATG"].copy()
+        mt = ''
+        fat = ''
+        atg = ''
+        score = ''
 
-    df_atg_ranking["VALOR"] = (
-        df_atg_ranking["VALOR"]
-        .astype(str)
-        .str.replace("%", "", regex=False)
-        .str.replace(",", ".", regex=False)
-        .str.strip()
-    )
-
-    df_atg_ranking["VALOR"] = pd.to_numeric(df_atg_ranking["VALOR"], errors="coerce")
-    df_atg_ranking = df_atg_ranking.dropna(subset=["VALOR"])
-    df_atg_ranking = df_atg_ranking[df_atg_ranking["VALOR"] != 0]
-
-
-    # Calcula média de atingimento por técnico
-    ranking = df_atg_ranking.groupby("TÉCNICO", as_index=False)["VALOR"].mean().dropna()
-
-
-
-    # Top 10 e bottom 10
-    melhores = ranking.sort_values("VALOR", ascending=False).head(10)
-    piores = ranking.sort_values("VALOR", ascending=True).head(10)
-
-
-
-
-    st.markdown("""
-    <style>
-    .rank-container {
-        display: flex;
-        justify-content: space-around;
-        gap: 40px;
-        margin-bottom: 40px;
+        if meta_3:
+            mt = f"""<p style='font-size: 20px; color:#38a169;'>Meta: {corrige_nan(dados_periodo.get('MT', '-'))}</p>"""
+        if fat_3:
+            fat = f"""<p style='font-size: 20px; color: #e53e3e;'><b>Faturado:</b> {dados_periodo.get('FAT', '-')}</p>"""
+        if atg_3:
+            atg = f"""<p style='font-size: 20px; color:#3182ce;'><b>Atingimento:</b> {dados_periodo.get('ATG', '-')}</p>"""
+        if score_3:
+            score = f"""<p style='font-size: 20px; color:white;'><b>Pontuação:</b> {dados_periodo.get('SCORE', '-')}</p>"""
         
-    }
-    .rank-card {
-        width: 45%;
-        background-color: #0e1117;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 4px 10px rgba(255,255,255,0.1);
-    }
-    .rank-card h3 {
-        text-align: center;
-        color: #4fd1c5;
-        margin-bottom: 15px;
-    }
-    .rank-list {
-        list-style: none;
-        padding-left: 0;
-        color: white;
-        font-size: 16px;
-    }
-    .rank-list li {
-        display: flex;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        padding: 6px 0;
-    }
-    .rank-list li span:first-child {
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+        cards_html += f"""
+            <div style='background-color: rgba(255, 255, 255, 0.05); 
+                        padding:20px; border-radius:15px; 
+                        text-align:center; 
+                        box-shadow: 0 4px 12px rgba(100,100,100,0.2); 
+                        border: solid 1px rgba(255,255,255,0.2); 
+                        margin: 40px 20px; 
+                        min-width:240px;>
+                <label style='font-size:28px; color:#a0aec0; margin-bottom:25px;'>{periodo}</label>
+                {mt}{fat}{atg}{score}</div>"""
+        
+    cards_html += "</div>"
 
-    # HTML dos rankings
-    melhores_html = "".join([
-        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
-        for _, row in melhores.iterrows()
-    ])
-    piores_html = "".join([
-        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
-        for _, row in piores.iterrows()
-    ])
-
-    html = textwrap.dedent(f"""
-    <div class="rank-container">
-        <div class="rank-card">
-            <h3>🏆 Top 10 Técnicos</h3>
-            <ul class="rank-list">{melhores_html}</ul>
-        </div>
-        <div class="rank-card">
-            <h3>⚠️ 10 Piores Técnicos</h3>
-            <ul class="rank-list">{piores_html}</ul>
-        </div>
-    </div>
-    """)
-
-    st.markdown(html, unsafe_allow_html=True)
-
-
+    st.markdown(cards_html, unsafe_allow_html=True)
+        
 tecnicos = df["TÉCNICO"]
 
 ck_valores = st.checkbox("Visualizar Valores Individuais")
@@ -302,34 +217,8 @@ if ck_valores:
     }
     </style>
     """, unsafe_allow_html=True)
-
-    # Exibe os cards se houver dados
-    if not df_atg.empty:
-        melhor = df_atg.loc[df_atg["VALOR"].idxmax()]
-        pior = df_atg.loc[df_atg["VALOR"].idxmin()]
-
-        melhor_html = textwrap.dedent(f"""
-        <div class="performance-card">
-            <label>Melhor Mês</label>
-            <div class="valor">{melhor['VALOR']:.1f}%</div>
-            <div class="periodo">{melhor['PERIODO']}</div>
-        </div>
-        """).strip()
-
-        pior_html = textwrap.dedent(f"""
-        <div class="performance-card pior">
-            <label>Pior Mês</label>
-            <div class="valor">{pior['VALOR']:.1f}%</div>
-            <div class="periodo">{pior['PERIODO']}</div>
-        </div>
-        """).strip()
-
-        wrapper = f"<div class='performance-cards'>{melhor_html}{pior_html}</div>"
-
     
-        st.markdown(f"<div class='performance-cards'>{melhor_html}{pior_html}</div>", unsafe_allow_html=True)
-    else:
-        st.warning("Nenhum dado de ATG encontrado.")
+
 
 
     st.markdown("""
@@ -396,6 +285,41 @@ if ck_valores:
     """, unsafe_allow_html=True)
 
     # Título principal
+    
+    st.markdown("""
+        <style>
+
+        .checkbox-label {
+            font-size: 16px !important;
+            color: #cbd5e0 !important; /* cinza claro */
+        }
+
+        div[data-testid="stHorizontalBlock"] > div {
+            display: flex;
+            align-items: center;
+        }
+
+        div[data-testid="stCheckbox"] > label:hover {
+            color: #63b3ed !important; /* azul claro ao passar mouse */
+            cursor: pointer;
+        }
+
+        </style>
+        """, unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        meta_ind = st.checkbox("Mostrar Meta", key="meta")
+
+    with col2:
+        fat_ind = st.checkbox("Mostrar Faturamento", key="fat")
+
+    with col3:
+        atg_ind = st.checkbox("Mostrar Atingimento", key="atg")
+
+    with col4:
+        score_ind = st.checkbox("Mostrar Pontuação", key="score")
 
     if periodo_escolhido != "Todos":
         dados_periodo = df_melt[df_melt["PERIODO"] == periodo_escolhido].set_index("TIPO")["VALOR"]
@@ -422,28 +346,138 @@ if ck_valores:
         st.markdown(card_html, unsafe_allow_html=True)
 
     else:
-
+        cards_html = "<div style='display:flex; text-align: center; overflow:scroll;'>"
         # Cria os cards por período
         for periodo in periodos:
-            dados_periodo = df_melt[df_melt["PERIODO"] == periodo].set_index("TIPO")["VALOR"]
-            
-            st.markdown(f"<div class='period-title'>📅 {periodo}</div>", unsafe_allow_html=True)
+            dados_periodo = df_melt[df_melt["PERIODO"] == periodo].set_index("TIPO")["VALOR"].fillna("---")
 
-            card_html = f"""
-            <div class="card-container">
-                <div class="card">
-                    <div class="metric atg">{dados_periodo.get('ATG', '-')}</div>
-                    <div class="label">Atingido</div>
-                </div>
-                <div class="card">
-                <div class="metric meta">{dados_periodo.get('MT', '-')}</div>
-                    <div class="label">Meta</div>
-                </div>
-                <div class="card">
-                    <div class="metric fat">{dados_periodo.get('FAT', '-')}</div>
-                    <div class="label">Faturado</div>
-                </div>
-            </div>
+            mt = ''
+            fat = ''
+            atg =''
+            score = ''
+
+            if meta_ind:
+                mt = f"""<p style='font-size: 20px; color:#38a169;'>Meta: {dados_periodo.get('MT', '-')}</p>"""
+            if fat_ind:
+                fat = f"""<p style='font-size: 20px; color: #e53e3e;'><b>Faturado:</b> {dados_periodo.get('FAT', '-')}</p>"""
+            if atg_ind:
+                atg = f"""<p style='font-size: 20px; color:#3182ce;'><b>Atingimento:</b> {dados_periodo.get('ATG', '-')}</p>"""
+            if score_ind:
+                score = f"""<p style='font-size: 20px; color:white;'><b>Pontuação:</b> {dados_periodo.get('SCORE', '-')}</p>"""
+
+            
+            cards_html += f"""<div style='background-color: rgba(255, 255, 255, 0.05); padding:20px; border-radius:15px; text-align:center; box-shadow: 0 4px 12px rgba(100,100,100,0.2); border: solid 1px rgba(255,255,255,0.2); margin: 40px 20px; min-width:200px; heigth:200px; margin-bottom:40px'>
+                    <label style='font-size:22px; color:#a0aec0; margin-bottom:25px;'>{periodo}</label>
+                    {mt}{fat}{atg}{score}</div>
             """
             
-            st.markdown(card_html, unsafe_allow_html=True)
+        cards_html += "</div>"
+
+        st.markdown(cards_html, unsafe_allow_html=True)
+
+
+df_melt_ranking = df.melt(id_vars=["TÉCNICO"], value_vars=colunas_periodos_ranking, var_name="PERIODO_TIPO", value_name="VALOR")
+df_melt_ranking[["PERIODO", "TIPO"]] = df_melt_ranking["PERIODO_TIPO"].str.rsplit("_", n=1, expand=True)
+df_melt_ranking.drop(columns="PERIODO_TIPO", inplace=True)
+
+periodos_ranking = df_melt_ranking["PERIODO"].unique()[::-1]
+periodos_unicos_ranking = [p for p in ordem_periodos if p in df_melt_ranking["PERIODO"].unique()]
+periodos_unicos_ranking.reverse()
+
+ranking_ck = st.checkbox("Visualizar Ranking")
+
+if ranking_ck:
+
+    st.markdown(
+                    f"<h2 style='font-size:30px;text-align:center; margin-top:30px; color: #a0aec0;' >Ranking por Período</h2>",
+                    unsafe_allow_html=True
+            )
+
+    periodo_escolhido_ranking = st.selectbox("Selecione um período", periodos_unicos_ranking)
+
+    df_melt_ranking = df_melt_ranking[df_melt_ranking["PERIODO"] == periodo_escolhido_ranking]
+
+    df_atg_ranking = df_melt_ranking[df_melt_ranking["TIPO"] == "ATG"].copy()
+    
+    df_atg_ranking["VALOR"] = (
+        df_atg_ranking["VALOR"]
+        .astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", ".", regex=False)
+        .str.strip()
+    )
+
+    df_atg_ranking["VALOR"] = pd.to_numeric(df_atg_ranking["VALOR"], errors="coerce")
+    df_atg_ranking = df_atg_ranking.dropna(subset=["VALOR"])
+    df_atg_ranking = df_atg_ranking[df_atg_ranking["VALOR"] != 0]
+
+    # Calcula média de atingimento por técnico
+    ranking = df_atg_ranking.groupby("TÉCNICO", as_index=False)["VALOR"].mean().dropna()
+    
+    # Top 10 e bottom 10
+    melhores = ranking.sort_values("VALOR", ascending=False).head(10)
+    piores = ranking.sort_values("VALOR", ascending=True).head(10)
+
+    st.markdown("""
+    <style>
+    .rank-container {
+        display: flex;
+        justify-content: space-around;
+        gap: 40px;
+        margin-bottom: 40px;
+        
+    }
+    .rank-card {
+        width: 45%;
+        background-color: #0e1117;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+    }
+    .rank-card h3 {
+        text-align: center;
+        color: #4fd1c5;
+        margin-bottom: 15px;
+    }
+    .rank-list {
+        list-style: none;
+        padding-left: 0;
+        color: white;
+        font-size: 16px;
+    }
+    .rank-list li {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 6px 0;
+    }
+    .rank-list li span:first-child {
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # HTML dos rankings
+    melhores_html = "".join([
+        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
+        for _, row in melhores.iterrows()
+    ])
+    piores_html = "".join([
+        f"<li><span>{row['TÉCNICO']}</span><span>{row['VALOR']:.1f}%</span></li>"
+        for _, row in piores.iterrows()
+    ])
+
+    html = textwrap.dedent(f"""
+    <div class="rank-container">
+        <div class="rank-card">
+            <h3>🏆 Top 10 Técnicos</h3>
+            <ul class="rank-list">{melhores_html}</ul>
+        </div>
+        <div class="rank-card">
+            <h3>⚠️ 10 Piores Técnicos</h3>
+            <ul class="rank-list">{piores_html}</ul>
+        </div>
+    </div>
+    """)
+
+    st.markdown(html, unsafe_allow_html=True)
