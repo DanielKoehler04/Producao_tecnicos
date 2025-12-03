@@ -25,8 +25,10 @@ ordem_periodos = [
 ]
 
 periodo_3meses = [
+
     "JAN_FEV", "FEV_MAR", "MAR_ABR", "ABR_MAI", "MAI_JUN", "JUN_JUL",
     "JUL_AGO", "AGO_SET", "SET_OUT", "OUT_NOV",
+
 ]
 
 df_3meses = df_3meses = df[df["NOME 3 MESES"].notna() & (df["NOME 3 MESES"] != "")]
